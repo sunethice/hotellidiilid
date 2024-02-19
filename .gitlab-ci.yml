@@ -1,0 +1,29 @@
+# This file is a template, and might need editing before it works on your project.
+# see https://docs.gitlab.com/ce/ci/yaml/README.html for all available options
+
+# you can delete this line if you're not using Docker
+image: alpine:latest
+stages:
+  - test
+
+before_script:
+  - which ssh-agent || ( apk --update add openssh-client )
+  - eval $(ssh-agent -s)
+  - mkdir ~/.ssh
+
+after_script:
+  - echo "COMPLETED"
+
+test:
+  stage: test
+  environment:
+    name: testing
+    url: http://api.api.hotellidiilid.ee
+  script:
+    - echo "$TEST_VPS_KEY" | ssh-add -
+    - ssh-keyscan -t rsa $TEST_VPS_IP >> ~/.ssh/known_hosts
+    - ssh $TEST_VPS_USER@$TEST_VPS_IP "cd $TEST_VPS_DEPOLY_PATH && git checkout test && git pull origin test && composer install && cp .env.test .env && php artisan config:cache && php artisan fix:passport"
+  only: 
+    - test
+  when: manual
+
